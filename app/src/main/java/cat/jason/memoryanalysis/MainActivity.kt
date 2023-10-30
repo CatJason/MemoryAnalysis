@@ -7,17 +7,21 @@ import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
+import android.view.View
 import android.view.WindowManager
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -37,14 +41,18 @@ import com.github.mikephil.charting.data.BarEntry
 import kotlinx.coroutines.delay
 
 class MainActivity : ComponentActivity() {
+
+    private lateinit var composeView: ComposeView
+
     companion object{
         const val OVERLAY_PERMISSION_REQ_CODE = 1234
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        composeView = ComposeView(this)
         setContent {
-
+            Text(text = "MainActivity")
         }
 
         // Trigger the floating window (for demo purposes)
@@ -142,8 +150,6 @@ class MainActivity : ComponentActivity() {
 
     private fun displayFloatingWindow(context: Context) {
         if (Settings.canDrawOverlays(context)) {
-            val composeView = ComposeView(context)
-
             // Manually set ViewTreeLifecycleOwner and ViewTreeViewModelStoreOwner
             composeView.setViewTreeSavedStateRegistryOwner(this@MainActivity)
             composeView.setViewTreeLifecycleOwner(this@MainActivity)
@@ -153,14 +159,22 @@ class MainActivity : ComponentActivity() {
                     // A surface container using the 'background' color from the theme
                     Surface(
                         modifier = Modifier.fillMaxSize(),
-                        color = MaterialTheme.colorScheme.background
+                        color = MaterialTheme.colorScheme.background.copy(alpha = 0.5f)
                     ) {
                         Column(
-                            modifier = Modifier.fillMaxSize(),
+                            modifier = Modifier.fillMaxSize().padding(16.dp),
                             verticalArrangement = Arrangement.Top,
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
-                            BarChartComposable(Modifier.padding(top = 40.dp)) // 添加这一行
+                            BarChartComposable(Modifier.padding(top = 40.dp))
+
+                            Spacer(modifier = Modifier.height(16.dp)) // Adds some spacing between the chart and the button
+
+                            Button(onClick = {
+                                System.gc() // Request garbage collection
+                            }) {
+                                Text("Run Garbage Collection")
+                            }
                         }
                     }
                 }
@@ -184,6 +198,15 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    override fun onStop() {
+        super.onStop()
+        composeView.visibility = View.GONE
+    }
+
+    override fun onStart() {
+        super.onStart()
+        composeView.visibility = View.VISIBLE
+    }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         if (requestCode == OVERLAY_PERMISSION_REQ_CODE) {
