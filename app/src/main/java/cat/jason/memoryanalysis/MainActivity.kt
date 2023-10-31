@@ -6,23 +6,23 @@ import android.graphics.PixelFormat
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
-import android.os.Debug
 import android.provider.Settings
 import android.view.View
 import android.view.WindowManager
-import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Button
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
@@ -33,6 +33,7 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.setViewTreeLifecycleOwner
 import androidx.savedstate.setViewTreeSavedStateRegistryOwner
@@ -61,6 +62,68 @@ class MainActivity : ComponentActivity() {
 
         // Trigger the floating window (for demo purposes)
         showFloatingWindow()
+    }
+
+    @Composable
+    fun FloatingContent(minimized: Boolean, onToggle: () -> Unit) {
+        var usedMemory by remember { mutableStateOf(0L) } // Mutable state for the used memory
+
+        // Recalculate memory usage every second
+        LaunchedEffect(key1 = "memoryUpdate") {
+            while (true) {
+                usedMemory = (Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory()) / (1024 * 1024) // in MB
+                delay(1000) // Wait for a second
+            }
+        }
+
+        val maxMemory = Runtime.getRuntime().maxMemory() / (1024 * 1024) // in MB
+
+        val circleColor = when {
+            usedMemory <= maxMemory / 3 -> Color.Green
+            usedMemory <= 2 * maxMemory / 3 -> Color.Blue
+            else -> Color.Red
+        }
+
+        if (minimized) {
+            // The entire circle acts as the "Maximize" button
+            Surface(
+                modifier = Modifier.size(50.dp).clickable(onClick = onToggle),
+                shape = CircleShape,
+                color = circleColor
+            ) {
+                // Use Box to center the Text content
+                Box(contentAlignment = Alignment.Center) {
+                    Text(
+                        text = "$usedMemory MB",
+                        color = Color.Black,
+                        fontSize = 12.sp
+                    )
+                }
+            }
+        } else {
+            // Your existing full window content
+            Column(
+                modifier = Modifier.fillMaxSize().padding(16.dp),
+                verticalArrangement = Arrangement.Top,
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                BarChartComposable(Modifier.padding(top = 40.dp))
+
+                Spacer(modifier = Modifier.height(16.dp)) // Adds spacing between the chart and the button
+
+                Button(onClick = {
+                    Runtime.getRuntime().gc()
+                }) {
+                    Text("Run Garbage Collection")
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                Button(onClick = onToggle) {
+                    Text("Minimize")
+                }
+            }
+        }
     }
 
     @Composable
@@ -159,30 +222,12 @@ class MainActivity : ComponentActivity() {
             composeView.setViewTreeLifecycleOwner(this@MainActivity)
 
             composeView.setContent {
+                val minimized = remember { mutableStateOf(false) }
                 MemoryAnalysisTheme {
-                    // A surface container using the 'background' color from the theme
-                    val width = LocalConfiguration.current.screenWidthDp.dp
-                    val height = width * 13 / 16
-                    Surface(
-                        modifier = Modifier.height(height).width(width),
-                        color = MaterialTheme.colorScheme.background.copy(alpha = 0.5f)
-                    ) {
-                        Column(
-                            modifier = Modifier.height(40.dp).padding(16.dp),
-                            verticalArrangement = Arrangement.Top,
-                            horizontalAlignment = Alignment.CenterHorizontally
-                        ) {
-                            BarChartComposable(Modifier.padding(top = 40.dp))
-
-                            Spacer(modifier = Modifier.height(16.dp)) // Adds some spacing between the chart and the button
-
-                            Button(onClick = {
-                                Runtime.getRuntime().gc()
-                            }) {
-                                Text("Run Garbage Collection")
-                            }
-                        }
-                    }
+                    FloatingContent(
+                        minimized = minimized.value,
+                        onToggle = { minimized.value = !minimized.value }
+                    )
                 }
             }
 
