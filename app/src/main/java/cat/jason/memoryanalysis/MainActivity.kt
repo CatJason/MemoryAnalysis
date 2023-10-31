@@ -6,9 +6,11 @@ import android.graphics.PixelFormat
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.os.Debug
 import android.provider.Settings
 import android.view.View
 import android.view.WindowManager
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.Arrangement
@@ -18,6 +20,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -35,6 +38,7 @@ import androidx.lifecycle.setViewTreeLifecycleOwner
 import androidx.savedstate.setViewTreeSavedStateRegistryOwner
 import cat.jason.memoryanalysis.ui.theme.MemoryAnalysisTheme
 import com.github.mikephil.charting.charts.BarChart
+import com.github.mikephil.charting.components.XAxis
 import com.github.mikephil.charting.data.BarData
 import com.github.mikephil.charting.data.BarDataSet
 import com.github.mikephil.charting.data.BarEntry
@@ -69,7 +73,7 @@ class MainActivity : ComponentActivity() {
                 delay(1000) // Wait for a second
 
                 // Calculate the used memory
-                val usedMemory = (Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory()) / (1024 * 1024) * 10// in MB
+                val usedMemory = (Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory()) / (1024 * 1024)// in MB
                 val maxMemory = Runtime.getRuntime().maxMemory() / (1024 * 1024) // in MB
 
                 when {
@@ -105,11 +109,11 @@ class MainActivity : ComponentActivity() {
                     }
 
                     xAxis.setDrawGridLines(false)
-                    axisRight.setDrawGridLines(false)
+                    xAxis.position = XAxis.XAxisPosition.BOTTOM
 
                     val maxMemoryValue = Runtime.getRuntime().maxMemory() / (1024 * 1024) // in MB
                     axisLeft.axisMaximum = maxMemoryValue.toFloat()
-                    axisLeft.setDrawGridLines(false)
+                    axisRight.isEnabled = false
 
                     xAxis.axisMinimum = 0f
                     xAxis.axisMaximum = 10f
@@ -157,12 +161,14 @@ class MainActivity : ComponentActivity() {
             composeView.setContent {
                 MemoryAnalysisTheme {
                     // A surface container using the 'background' color from the theme
+                    val width = LocalConfiguration.current.screenWidthDp.dp
+                    val height = width * 13 / 16
                     Surface(
-                        modifier = Modifier.fillMaxSize(),
+                        modifier = Modifier.height(height).width(width),
                         color = MaterialTheme.colorScheme.background.copy(alpha = 0.5f)
                     ) {
                         Column(
-                            modifier = Modifier.fillMaxSize().padding(16.dp),
+                            modifier = Modifier.height(40.dp).padding(16.dp),
                             verticalArrangement = Arrangement.Top,
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
@@ -171,7 +177,7 @@ class MainActivity : ComponentActivity() {
                             Spacer(modifier = Modifier.height(16.dp)) // Adds some spacing between the chart and the button
 
                             Button(onClick = {
-                                System.gc() // Request garbage collection
+                                Runtime.getRuntime().gc()
                             }) {
                                 Text("Run Garbage Collection")
                             }
