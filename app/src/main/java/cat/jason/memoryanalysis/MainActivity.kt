@@ -78,7 +78,7 @@ class MainActivity : ComponentActivity() {
                     else -> colors.add(Color.Red.toArgb())
                 }
 
-                if (entries.size < 20) {
+                if (entries.size < 10) {
                     entries.add(BarEntry(entries.size.toFloat(), usedMemory.toFloat()))
                 } else {
                     entries.removeAt(0)
@@ -112,8 +112,8 @@ class MainActivity : ComponentActivity() {
                     axisLeft.setDrawGridLines(false)
 
                     xAxis.axisMinimum = 0f
-                    xAxis.axisMaximum = 20f
-                    xAxis.labelCount = 20
+                    xAxis.axisMaximum = 10f
+                    xAxis.labelCount = 10
 
                     description.isEnabled = false  // This line disables the description label
 
